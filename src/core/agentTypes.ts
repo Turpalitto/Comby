@@ -12,6 +12,7 @@ export interface ChatMessage {
   files?: AgentFile[]
   stage?: AgentStage
   model?: string
+  suggestions?: string[]
   ts: number
 }
 

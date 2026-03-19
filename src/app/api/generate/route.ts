@@ -1,6 +1,10 @@
-// API route — stub, implemented in Stage 7
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
+// Этот endpoint заменён на /api/agent/run
+// Перенаправляем документацию
 export async function POST() {
-  return NextResponse.json({ message: 'Generation pipeline not yet implemented' }, { status: 501 });
+  return NextResponse.json(
+    { error: 'Используйте /api/agent/run для генерации проектов' },
+    { status: 308 }
+  )
 }

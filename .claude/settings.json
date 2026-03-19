@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3001 -o /dev/null -w \"%{http_code}\")",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

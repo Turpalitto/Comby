@@ -12,6 +12,7 @@ build/
 .env
 .env.local
 .env.*.local
+.claude/settings.local.json
 
 # Generated preview project
 generated-preview/node_modules/
