@@ -69,14 +69,32 @@ RULES:
 
 // ─── JSON extractor ───────────────────────────────────────────
 
+function isValidResponse(obj: unknown): obj is AgentResponse {
+  if (!obj || typeof obj !== 'object') return false
+  const r = obj as Record<string, unknown>
+  return (
+    typeof r.stage   === 'string' &&
+    typeof r.summary === 'string' &&
+    Array.isArray(r.files) &&
+    r.files.every((f: unknown) =>
+      f && typeof f === 'object' &&
+      typeof (f as Record<string,unknown>).path    === 'string' &&
+      typeof (f as Record<string,unknown>).content === 'string'
+    )
+  )
+}
+
 function extractJSON(text: string): AgentResponse | null {
-  try { return JSON.parse(text) } catch {}
-  const stripped = text.replace(/^```[a-z]*\n?/im, '').replace(/```\s*$/m, '').trim()
-  try { return JSON.parse(stripped) } catch {}
-  const start = text.indexOf('{')
-  const end   = text.lastIndexOf('}')
-  if (start !== -1 && end > start) {
-    try { return JSON.parse(text.slice(start, end + 1)) } catch {}
+  const attempts = [
+    () => JSON.parse(text),
+    () => JSON.parse(text.replace(/^```[a-z]*\n?/im, '').replace(/```\s*$/m, '').trim()),
+    () => { const s = text.indexOf('{'); const e = text.lastIndexOf('}'); return s !== -1 && e > s ? JSON.parse(text.slice(s, e + 1)) : null },
+  ]
+  for (const attempt of attempts) {
+    try {
+      const parsed = attempt()
+      if (isValidResponse(parsed)) return parsed
+    } catch { /* try next */ }
   }
   return null
 }

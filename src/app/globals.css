@@ -30,5 +30,5 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-/* Textarea auto-resize */
-textarea { field-sizing: content; min-height: 44px; max-height: 200px; }
+/* Textarea base */
+textarea { min-height: 44px; max-height: 200px; overflow-y: auto; }

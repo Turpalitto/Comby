@@ -147,13 +147,13 @@ function ChatMsg({ msg }: { msg: ChatMessage }) {
               className="mt-2 flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/60 transition-colors"
             >
               <span className={`transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}>›</span>
-              Made {msg.files!.length} file{msg.files!.length !== 1 ? 's' : ''}
+              Made {msg.files?.length} file{(msg.files?.length ?? 0) !== 1 ? 's' : ''}
             </button>
           )}
 
           {hasFiles && expanded && (
             <div className="mt-2 space-y-1 pl-3 border-l border-white/[0.08]">
-              {msg.files!.map(f => (
+              {msg.files?.map(f => (
                 <div key={f.path} className="flex items-center gap-2 text-[11px] text-white/30 font-mono">
                   <span>📄</span><span>{f.path}</span>
                   <span className="text-white/15">{(f.content.length/1024).toFixed(1)}k</span>
@@ -265,7 +265,8 @@ export default function BuilderShell() {
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(), role: 'assistant',
         content: data.summary ?? 'Готово.',
-        files: data.files, stage: data.stage,
+        files: data.files ?? [],
+        stage: data.stage,
         model: data._model,
         ts: Date.now(),
       }])
