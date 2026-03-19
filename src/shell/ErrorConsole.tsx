@@ -9,16 +9,28 @@ export interface ConsoleError {
   ts:      number
 }
 
+const AUTO_FIX_DELAY = 8  // seconds before auto-fix triggers
+const MAX_AUTO_FIXES  = 2  // max automatic fix attempts per session
+
 interface ErrorConsoleProps {
-  iframeRef:  React.RefObject<HTMLIFrameElement>
-  onAutoFix:  (errors: ConsoleError[]) => void
-  isFixing:   boolean
+  iframeRef:     React.RefObject<HTMLIFrameElement>
+  onAutoFix:     (errors: ConsoleError[]) => void
+  isFixing:      boolean
+  autoFix?:      boolean  // enable auto-fix loop
+  autoFixCount?: number   // how many auto-fixes have run (tracked by parent)
 }
 
-export function ErrorConsole({ iframeRef, onAutoFix, isFixing }: ErrorConsoleProps) {
-  const [errors,   setErrors]   = useState<ConsoleError[]>([])
-  const [expanded, setExpanded] = useState(false)
+export function ErrorConsole({ iframeRef, onAutoFix, isFixing, autoFix = false, autoFixCount = 0 }: ErrorConsoleProps) {
+  const [errors,    setErrors]    = useState<ConsoleError[]>([])
+  const [expanded,  setExpanded]  = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+
+  const cancelAutoFix = () => {
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
+    setCountdown(0)
+  }
 
   // Listen for postMessage from iframe injected script
   useEffect(() => {
@@ -30,16 +42,35 @@ export function ErrorConsole({ iframeRef, onAutoFix, isFixing }: ErrorConsolePro
           line:    e.data.line,
           ts:      Date.now(),
         }
-        setErrors(prev => [...prev.slice(-19), err])
+        setErrors(prev => {
+          const next = [...prev.slice(-19), err]
+
+          // Start auto-fix countdown if enabled and under limit
+          if (autoFix && autoFixCount < MAX_AUTO_FIXES && !isFixing && !countdownRef.current) {
+            let secs = AUTO_FIX_DELAY
+            setCountdown(secs)
+            countdownRef.current = setInterval(() => {
+              secs--
+              setCountdown(secs)
+              if (secs <= 0) {
+                cancelAutoFix()
+                onAutoFix(next)
+              }
+            }, 1000)
+          }
+
+          return next
+        })
         setExpanded(true)
       }
       if (e.data?.type === 'combi_clear') {
         setErrors([])
+        cancelAutoFix()
       }
     }
     window.addEventListener('message', handler)
-    return () => window.removeEventListener('message', handler)
-  }, [])
+    return () => { window.removeEventListener('message', handler); cancelAutoFix() }
+  }, [autoFix, autoFixCount, isFixing, onAutoFix])
 
   // Scroll to bottom on new errors
   useEffect(() => {
@@ -65,15 +96,28 @@ export function ErrorConsole({ iframeRef, onAutoFix, isFixing }: ErrorConsolePro
         <div className="flex items-center gap-2">
           {errors.length > 0 && (
             <>
+              {/* Auto-fix countdown */}
+              {countdown > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-amber-400/70 animate-pulse">
+                    Авто-фикс через {countdown}с...
+                  </span>
+                  <button
+                    onClick={cancelAutoFix}
+                    className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
+                  >✕</button>
+                </div>
+              )}
+
               <button
-                onClick={() => onAutoFix(errors)}
+                onClick={() => { cancelAutoFix(); onAutoFix(errors) }}
                 disabled={isFixing}
                 className="flex items-center gap-1.5 px-2.5 h-5 rounded text-[10px] bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 disabled:opacity-40 transition-all"
               >
                 {isFixing ? '⟳ Исправляю...' : '✦ Исправить ошибки'}
               </button>
               <button
-                onClick={() => setErrors([])}
+                onClick={() => { setErrors([]); cancelAutoFix() }}
                 className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
               >
                 Очистить

@@ -25,9 +25,15 @@ export interface FilePlan {
   files: PlannedFile[];
 }
 
+export interface GeneratedFile {
+  path:    string;
+  content: string;
+}
+
 export interface GeneratedProject {
-  workspacePath: string;
-  generatedFiles: string[];
+  workspacePath:  string;
+  generatedFiles: string[];  // backward compat — paths only
+  files:          GeneratedFile[];  // full content
 }
 
 export interface PreviewTarget {

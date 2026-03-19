@@ -357,6 +357,7 @@ export default function BuilderShell() {
   const [showModelPicker, setShowModelPicker] = useState(false)
   const [firstUserMsg,   setFirstUserMsg]   = useState('')
   const [isFixing,       setIsFixing]       = useState(false)
+  const [autoFixCount,   setAutoFixCount]   = useState(0)
   const [showVersions,   setShowVersions]   = useState(false)
   const [activeModel,    setActiveModel]    = useState<string>('')  // actual model used, from API
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -595,6 +596,7 @@ export default function BuilderShell() {
 
   const handleAutoFix = useCallback(async (errors: ConsoleError[]) => {
     setIsFixing(true)
+    setAutoFixCount(c => c + 1)
     const errText = errors.map(e => `- ${e.message}${e.line ? ` (line ${e.line})` : ''}`).join('\n')
     await runAgent(`Исправь следующие JavaScript ошибки в коде:\n${errText}`)
     setIsFixing(false)
@@ -891,6 +893,8 @@ export default function BuilderShell() {
             iframeRef={iframeRef}
             onAutoFix={handleAutoFix}
             isFixing={isFixing}
+            autoFix={files.length > 0}
+            autoFixCount={autoFixCount}
           />
         </div>
         </ErrorBoundary>
